@@ -13,7 +13,7 @@ namespace UnitTestProject
         public void ADayOfWeekCanBeHoliday()
         {
             var holidayCalendar = new HolidayCalendar();
-            holidayCalendar.MakeDayOfWeekAsHoliday(new DayOfWeekHolidayRule(DayOfWeek.Saturday));
+            holidayCalendar.AddHolidayRules(new DayOfWeekHolidayRule(DayOfWeek.Saturday));
             var aSaturday = new DateTime(2014, 3, 1);
             Assert.IsTrue(holidayCalendar.IsHoliday(aSaturday));
         }
@@ -29,8 +29,8 @@ namespace UnitTestProject
         public void MoreThanOneDayOfWeekCanBeHoliday()
         {
             var holidayCalendar = new HolidayCalendar();
-            holidayCalendar.MakeDayOfWeekAsHoliday(new DayOfWeekHolidayRule(DayOfWeek.Sunday));
-            holidayCalendar.MakeDayOfWeekAsHoliday(new DayOfWeekHolidayRule(DayOfWeek.Saturday));
+            holidayCalendar.AddHolidayRules(new DayOfWeekHolidayRule(DayOfWeek.Sunday));
+            holidayCalendar.AddHolidayRules(new DayOfWeekHolidayRule(DayOfWeek.Saturday));
             var aSunday = new DateTime(2014, 3, 2);
             var aSaturday = new DateTime(2014, 3, 2);
             Assert.IsTrue(holidayCalendar.IsHoliday(aSunday));
@@ -40,7 +40,7 @@ namespace UnitTestProject
         public void Test1()
         {
             var holidayCalendar = new HolidayCalendar();
-            holidayCalendar.MakeDayMonthAsHoliday(new DayOfMonthHolidayRule(1,1));
+            holidayCalendar.AddHolidayRules(new DayOfMonthHolidayRule(1,1));
             var aJanuaryFirst = new DateTime(2014, 1, 1);
             Assert.IsTrue(holidayCalendar.IsHoliday(aJanuaryFirst));
         } 
@@ -48,7 +48,7 @@ namespace UnitTestProject
         public void Test2()
         {
             var holidayCalendar = new HolidayCalendar();
-            holidayCalendar.MakeDayMonthAsHoliday(new DayOfMonthHolidayRule(1, 1));
+            holidayCalendar.AddHolidayRules(new DayOfMonthHolidayRule(1, 1));
             var aNavidad = new DateTime(2014, 12, 25);
             Assert.IsFalse(holidayCalendar.IsHoliday(aNavidad));
         } 
@@ -56,8 +56,8 @@ namespace UnitTestProject
         public void Test3()
         {
             var holidayCalendar = new HolidayCalendar();
-            holidayCalendar.MakeDayMonthAsHoliday(new DayOfMonthHolidayRule(1, 1));
-            holidayCalendar.MakeDayMonthAsHoliday(new DayOfMonthHolidayRule(12, 25));
+            holidayCalendar.AddHolidayRules(new DayOfMonthHolidayRule(1, 1));
+            holidayCalendar.AddHolidayRules(new DayOfMonthHolidayRule(12, 25));
             var aNavidad = new DateTime(2014, 12, 25);
             var aJanuaryFirst = new DateTime(2014, 1, 1);
             Assert.IsTrue(holidayCalendar.IsHoliday(aNavidad));
@@ -68,89 +68,50 @@ namespace UnitTestProject
         {
             var holidayCalendar = new HolidayCalendar();
             var aDate = new DateTime(2014, 1, 12);
-            holidayCalendar.MakeDateAsHoliday(aDate);
+            holidayCalendar.AddHolidayRules(new DateHolidayRule(aDate));
             Assert.IsTrue(holidayCalendar.IsHoliday(aDate));
         }
-        //[TestMethod]
-        //public void Test5()
-        //{
-        //    var holidayCalendar = new HolidayCalendar();
-        //    var aDate = new DateTime(1998, 3, 2);
-        //    holidayCalendar.MakeDayOfWeekAsHoliday(new DateTime(1990,1,1), new DateTime(1999,12,31), DayOfWeek.Monday);
-        //    Assert.IsTrue(holidayCalendar.IsHoliday(aDate));
-        //}
+        [TestMethod]
+        public void Test5()
+        {
+            var holidayCalendar = new HolidayCalendar();
+            var aDate = new DateTime(1998, 3, 2);
+            holidayCalendar.AddHolidayRules(new CompoundRangeHolidayRule(new DateTime(1990, 1, 1), new DateTime(1999, 12, 31), new DayOfWeekHolidayRule(DayOfWeek.Monday)));
+            Assert.IsTrue(holidayCalendar.IsHoliday(aDate));
+        }
     }
-
     public class HolidayCalendar
     {
-        private IList<HolidayRule> _daysOfWeekHoliday = new List<HolidayRule>();
-        private IList<Tuple<int,int>> _daysOfMonthHoliday = new List<Tuple<int,int>>();
-        private IList<DateTime> _datesHolidays = new List<DateTime>();
+        private IList<HolidayRule> _holidayRules = new List<HolidayRule>();
 
         public bool IsHoliday(DateTime aDate)
         {
-            return IsDatesHolidays(aDate) ||
-                IsDaysOfMonthHolidays(aDate) ||
-                IsDayOfWeekHoliday(aDate);
+            return _holidayRules.Any(aHolidayRule => aHolidayRule.IsHoliday(aDate));
         }
-        private bool IsDatesHolidays(DateTime aDate)
+        public void AddHolidayRules(HolidayRule dayOfWeekHolidayRule)
         {
-            return _datesHolidays.Contains(aDate);
-        }
-
-        private bool IsDaysOfMonthHolidays(DateTime aDate)
-        {
-            return _daysOfMonthHoliday.Contains(new Tuple<int, int>(aDate.Month, aDate.Day));
-        }
-
-        private bool IsDayOfWeekHoliday(DateTime aDate)
-        {
-            return _daysOfWeekHoliday.Any(aHolidayRule => aHolidayRule.IsHoliday(aDate));
-        }
-
-        public void MakeDayOfWeekAsHoliday(DayOfWeekHolidayRule dayOfWeekHolidayRule)
-        {
-            _daysOfWeekHoliday.Add(dayOfWeekHolidayRule);
-        }
-
-        public void MakeDayMonthAsHoliday(DayOfMonthHolidayRule dayOfMonthHolidayRule)
-        {
-            _daysOfWeekHoliday.Add(dayOfMonthHolidayRule);
-        }
-
-        public void MakeDateAsHoliday(DateTime aDate)
-        {
-            _datesHolidays.Add(aDate);
-        }
-
-        public void MakeDayOfWeekAsHoliday(DateTime from, DateTime to, DayOfWeek dayOfWeek)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class DayOfMonthHolidayRule  : HolidayRule
-    {
-        private int aMonthNumber;
-        private int aDayNumber;
-
-        public DayOfMonthHolidayRule(int aMonthNumber, int aDayNumber)
-        {
-            this.aMonthNumber = aMonthNumber;
-            this.aDayNumber = aDayNumber;
-        }
-
-        public int ADayNumber { get => aDayNumber;}
-        public int AMonthNumber { get => aMonthNumber;}
-
-        public bool IsHoliday(DateTime aDate)
-        {
-            return aDate.Month.Equals(aMonthNumber) && aDate.Day.Equals(aDayNumber);
+            _holidayRules.Add(dayOfWeekHolidayRule);
         }
     }
     public interface HolidayRule
     {
         bool IsHoliday(DateTime aDate);
+    }
+    public class DayOfMonthHolidayRule  : HolidayRule
+    {
+        private int aMonthNumber;
+        private int aDayNumber;
+        public DayOfMonthHolidayRule(int aMonthNumber, int aDayNumber)
+        {
+            this.aMonthNumber = aMonthNumber;
+            this.aDayNumber = aDayNumber;
+        }
+        public int ADayNumber { get => aDayNumber;}
+        public int AMonthNumber { get => aMonthNumber;}
+        public bool IsHoliday(DateTime aDate)
+        {
+            return aDate.Month.Equals(aMonthNumber) && aDate.Day.Equals(aDayNumber);
+        }
     }
     public class DayOfWeekHolidayRule : HolidayRule
     {
@@ -160,12 +121,38 @@ namespace UnitTestProject
             _aDayOfWeek = aDayOfWeek;
         }
         public DayOfWeek ADayOfWeek { get => _aDayOfWeek;}
-
         public bool IsHoliday(DateTime aDate)
         {
             return aDate.DayOfWeek.Equals(this.ADayOfWeek);
         }
     }
-
-
+    public class DateHolidayRule : HolidayRule
+    {
+        private DateTime aDate;
+        public DateHolidayRule(DateTime aDate)
+        {
+            this.aDate = aDate;
+        }
+        public DateTime ADate { get => aDate;}
+        public bool IsHoliday(DateTime aDate)
+        {
+            return aDate.Equals(aDate);
+        }
+    }
+    public class CompoundRangeHolidayRule : HolidayRule
+    {
+        private DateTime from;
+        private DateTime to;
+        private DayOfWeekHolidayRule holidayRule;
+        public CompoundRangeHolidayRule(DateTime from, DateTime to, DayOfWeekHolidayRule holidayRule)
+        {
+            this.from = from;
+            this.to = to;
+            this.holidayRule = holidayRule;
+        }
+        public bool IsHoliday(DateTime aDate)
+        {
+            return aDate >= from && aDate <= to && holidayRule.IsHoliday(aDate); 
+        }
+    }
 }
